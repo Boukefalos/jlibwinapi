@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src/main/java"/>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry exported="true" kind="con" path="org.springsource.ide.eclipse.gradle.classpathcontainer"/>
 	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER" exported="true"/>
+	<classpathentry sourcepath="C:/Users/Rik/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna/4.2.0/6f6b127a5018e889a46067216a53485abb1b1f78/jna-4.2.0-sources.jar" kind="lib" path="C:/Users/Rik/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna/4.2.0/812b976ed15bb1b0b3fc059fae927b0f76b39585/jna-4.2.0.jar" exported="true"/>
+	<classpathentry sourcepath="C:/Users/Rik/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/platform/3.5.2/bc6b5158219706865e4a527e2602301286842641/platform-3.5.2-sources.jar" kind="lib" path="C:/Users/Rik/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/platform/3.5.2/beac07d13858ef3697ceeab43897d70aeb5113c9/platform-3.5.2.jar" exported="true"/>
 </classpath>
