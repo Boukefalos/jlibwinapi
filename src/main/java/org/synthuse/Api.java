@@ -26,6 +26,7 @@ import com.sun.jna.platform.win32.BaseTSD.ULONG_PTR;
 import com.sun.jna.platform.win32.WinBase.SYSTEM_INFO;
 import com.sun.jna.platform.win32.WinDef.HMENU;
 import com.sun.jna.platform.win32.WinDef.HWND;
+import com.sun.jna.platform.win32.WinDef.WPARAM;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.platform.win32.WinUser;
@@ -36,8 +37,9 @@ import com.sun.jna.ptr.PointerByReference;
 import com.sun.jna.win32.StdCallLibrary.StdCallCallback;
 import com.sun.jna.win32.W32APIOptions;
 
-public class Api {
-	
+public class Api {    
+    public static boolean EXACT = false;
+
 	// Constants
 	
     public static int WM_SETTEXT = 0x000c;
@@ -165,6 +167,8 @@ public class Api {
     public PsapiEx psapi;
     public Kernel32Ex kernel32;
 
+    protected HWND hWndFound;
+    
     public static final int POINT_Y(long i)
     {
         return (int) (i  >> 32);
@@ -807,4 +811,95 @@ public class Api {
 		//JOptionPane.showMessageDialog(null, "lvitem size: " + lvitem.size());
 
 	}
+
+    public WPARAM loadMenuItem(HWND hWnd, HMENU hMenu, boolean exact, String... path) throws Exception {
+        boolean found = false;
+        int itemID = -1;
+        int pathLength = path.length;
+        for (int i = 0; i < pathLength; ++i) {
+            String search = path[i];
+            int count = user32.GetMenuItemCount(hMenu);
+            found = false;
+            for (int position = 0; position < count; ++position) {
+                String menuItemText = GetMenuItemText(hMenu, position);
+                if (exact ? menuItemText.equals(search) : menuItemText.contains(search)) {
+                    found = true;
+                    if (i < pathLength - 1) {
+                        hMenu = user32.GetSubMenu(hMenu, position);
+                    } else {
+                        itemID = user32.GetMenuItemID(hMenu, position);
+                    }
+                    break;
+                }
+            }
+            if (!found) {
+                throw new Exception("Menu item not found!");
+            }
+        }
+        return new WPARAM(itemID);        
+    }
+
+
+    public HWND findTopWindow(String text, String className) {
+        hWndFound = null;
+        user32.EnumWindows(new WinUser.WNDENUMPROC() {
+            public boolean callback(HWND hWnd, Pointer lParam) {
+                if (Api.getWindowText(hWnd).contains(text)) {
+                    hWndFound = hWnd;
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }, 0);
+        return hWndFound;
+    }
+
+    protected HWND findChildWindow(HWND hWnd, String text) {
+        return findChildWindow(hWnd, EXACT, text);
+    }
+
+    protected HWND findChildWindow(HWND hWnd, boolean exact, String text) {
+        hWndFound = null;
+        user32.EnumChildWindows(hWnd, new WinUser.WNDENUMPROC() {
+            public boolean callback(HWND hWnd, Pointer lParam) {
+                if (exact ? Api.getWindowText(hWnd).equals(text) : Api.getWindowText(hWnd).contains(text)) {
+                    hWndFound = hWnd;
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }, null);
+        return hWndFound;
+    }
+
+    public HWND findChildWindow(HWND hWnd, String... path) {
+        return findChildWindow(hWnd, EXACT, path);
+    }
+
+    protected HWND findChildWindow(HWND hWnd, boolean exact, String... path) {
+        for (String search : path) {
+            hWnd = findChildWindow(hWnd, exact, search);
+        }
+        return hWnd;
+    }
+
+    public HWND[] findAllChildWindow(HWND hWnd, String search) {
+        return findAllChildWindow(hWnd, EXACT, search);
+    }
+
+    protected HWND[] findAllChildWindow(HWND hWnd, boolean exact, String search) {
+        ArrayList<HWND> hwndList = new ArrayList<HWND>();
+        user32.EnumChildWindows(hWnd, new WinUser.WNDENUMPROC() {
+            public boolean callback(HWND hWnd, Pointer lParam) {
+                String text = Api.getWindowText(hWnd);
+                if (exact ? text.equals(search) : text.contains(search)) {
+                    hwndList.add(hWnd);
+                }
+                return true;
+            }
+        }, null);
+        return hwndList.toArray(new HWND[0]);
+    }
 }
