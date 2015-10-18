@@ -9,12 +9,15 @@ package org.synthuse;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import org.synthuse.interfaces.Gdi32Ex;
 import org.synthuse.interfaces.Kernel32Ex;
 import org.synthuse.interfaces.PsapiEx;
 import org.synthuse.interfaces.User32Ex;
 import org.synthuse.objects.LVITEM_VISTA;
+import org.synthuse.objects.MenuItem;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
@@ -27,7 +30,6 @@ import com.sun.jna.platform.win32.WinDef.HMENU;
 import com.sun.jna.platform.win32.WinDef.HPEN;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.LPARAM;
-import com.sun.jna.platform.win32.WinDef.LRESULT;
 import com.sun.jna.platform.win32.WinDef.RECT;
 import com.sun.jna.platform.win32.WinDef.WPARAM;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
@@ -36,8 +38,6 @@ import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
-import com.sun.jna.win32.StdCallLibrary.StdCallCallback;
-import com.sun.jna.win32.W32APIOptions;
 
 public class Api {
     public static boolean EXACT = false;
@@ -166,6 +166,8 @@ public class Api {
     public PsapiEx psapi;
     public Kernel32Ex kernel32;
 
+    protected HashMap<HWND, HMENU> windowMap;
+    protected HashMap<MenuItem, WPARAM> menuItemMap;
     protected HWND hWndFound;
 
     public static final int POINT_Y(long i) {
@@ -180,28 +182,12 @@ public class Api {
         return ((long) (((short) ((int) (low) & 0xffff)) | ((int) ((short) ((int) (high) & 0xffff))) << 16));
     }
 
-    interface WNDPROC extends StdCallCallback {
-
-        LRESULT callback(HWND hWnd, int uMsg, WPARAM uParam, LPARAM lParam);
-
-    }
-
-    public interface Gdi32Ex extends W32APIOptions {
-        Gdi32Ex instance = (Gdi32Ex) Native.loadLibrary("gdi32", Gdi32Ex.class, DEFAULT_OPTIONS);
-
-        HANDLE SelectObject(HDC hdc, HANDLE hgdiobj);
-
-        HANDLE GetStockObject(int fnObject);
-
-        boolean Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-
-        HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
-    }
-
     public Api() {
         user32 = User32Ex.instance;
         psapi = PsapiEx.instance;
         kernel32 = Kernel32Ex.instance;
+        windowMap = new HashMap<HWND, HMENU>();
+        menuItemMap = new HashMap<MenuItem, WPARAM>();
     }
 
     public static Long GetHandleAsLong(HWND hWnd) {
@@ -701,5 +687,46 @@ public class Api {
             }
         }, null);
         return hwndList.toArray(new HWND[0]);
+    }
+    
+    public boolean activateItem(MenuItem menuItem) throws Exception {
+        HWND hWnd = menuItem.hWnd;
+        HMENU hMenu = menuItem.hMenu;
+        String[] path = menuItem.path;
+        boolean exact = menuItem.exact;
+        WPARAM wParam;
+        if (menuItemMap.containsKey(menuItem)) {
+            wParam = menuItemMap.get(menuItem);
+        } else {
+            wParam = loadMenuItem(hWnd, hMenu, exact, path);            
+        }
+        return user32.PostMessage(hWnd, Api.WM_COMMAND, wParam, null).intValue() > 0;
+    }
+
+    public boolean activateItem(HWND hWnd, boolean exact, String... path) throws Exception {
+        MenuItem menuItem = loadMenuItem(hWnd, exact, path);
+        return activateItem(menuItem);
+    }
+
+    public MenuItem loadMenuItem(HWND hWnd, boolean exact, String... path) throws Exception {
+        HMENU hMenu;
+        if (windowMap.containsKey(hWnd)) {
+            hMenu = windowMap.get(hWnd);
+        } else {
+            hMenu = user32.GetMenu(hWnd);
+            windowMap.put(hWnd, hMenu);
+        }
+        MenuItem menuItem = new MenuItem(hWnd, hMenu, path);
+        WPARAM wParam = loadMenuItem(hWnd, hMenu, exact, path);
+        menuItemMap.put(menuItem, wParam);
+        return menuItem;
+    }
+
+    protected WPARAM loadMenuItem(MenuItem menuItem) throws Exception {
+        HWND hWnd = menuItem.hWnd;
+        HMENU hMenu = menuItem.hMenu;
+        String[] path = menuItem.path;
+        boolean exact = menuItem.exact;
+        return loadMenuItem(hWnd, hMenu, exact, path);
     }
 }
