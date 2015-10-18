@@ -3,39 +3,19 @@ import java.util.HashMap;
 import java.util.Random;
 
 import org.synthuse.Api;
+import org.synthuse.objects.MenuItem;
 
 import com.sun.jna.platform.win32.WinDef.HMENU;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.WPARAM;
 
-public class Test {
-    
+public class Test {    
     protected Api api;
     protected HWND hWndFound;
     protected HashMap<HWND, HMENU> windowMap;
     protected HashMap<MenuItem, WPARAM> menuItemMap;
     protected HashMap<Slider, HashMap<Amount, MenuItem>> sliderMap;
     protected HashMap<Slider, HWND> valueMap;
-
-    class MenuItem {
-        public static final boolean EXACT = false;
-
-        public HWND hWnd;
-        public HMENU hMenu;
-        public String[] path;
-        public boolean exact;
-
-        public MenuItem(HWND hWnd, HMENU hMenu, String... path) {
-            this(hWnd, hMenu, EXACT, path);
-        }
-
-        public MenuItem(HWND hWnd, HMENU hMenu, boolean exact, String... path) {
-            this.hWnd = hWnd;
-            this.hMenu = hMenu;
-            this.exact = exact;
-            this.path = path;
-        }
-    }
 
     public Test() {
         api = new Api();
