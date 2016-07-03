@@ -1,7 +1,7 @@
-build
-bin
 .gradle
+.maven
 .settings
-.project
 .classpath
-/.settings
+.project
+bin
+build
