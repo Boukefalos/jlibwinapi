@@ -627,10 +627,16 @@ public class Api {
     }
 
     public HWND findTopWindow(String text, String className) {
+        return findTopWindow(text, EXACT, className);
+    }
+
+    public HWND findTopWindow(String text, boolean exact, String className) {
         hWndFound = null;
         user32.EnumWindows(new WinUser.WNDENUMPROC() {
             public boolean callback(HWND hWnd, Pointer lParam) {
-                if (Api.getWindowText(hWnd).contains(text)) {
+                String windowText = getWindowText(hWnd);
+                System.out.println(windowText);
+                if (exact ? windowText.equals(text) : windowText.contains(text)) {
                     hWndFound = hWnd;
                     return false;
                 } else {
